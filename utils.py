@@ -32,7 +32,3 @@ def parse_port_input(port_str):
         else:
             ports.append(int(part))
     return sorted(set(ports))
-
-
-numbers = "80, "
-print(numbers.split('-'))
