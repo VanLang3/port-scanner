@@ -115,6 +115,7 @@ def save_results(ip, results, output_dir="results"):
 
     open_ports = [port for port, is_open in results.items() if is_open]
 
+    # creating a dict to store the results
     output = {
         "target": ip,
         "scanned_at": timestamp,
@@ -124,6 +125,7 @@ def save_results(ip, results, output_dir="results"):
         "full_results": {str(port): is_open for port, is_open in results.items()}
     }
 
+    # writing the dict results
     with open(filename, "w") as f:
         json.dump(output, f, indent=2)
 
@@ -132,6 +134,7 @@ def save_results(ip, results, output_dir="results"):
 
 
 def main():
+    # taking input from the terminal
     parser = argparse.ArgumentParser(
         description="Port scanner — educational security tool"
     )
