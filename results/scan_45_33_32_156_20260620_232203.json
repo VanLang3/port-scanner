@@ -1,0 +1,26 @@
+{
+  "target": "45.33.32.156",
+  "scanned_at": "20260620_232203",
+  "total_ports_scanned": 3,
+  "open_ports": [
+    80,
+    22
+  ],
+  "open_count": 2,
+  "full_results": {
+    "80": true,
+    "22": true,
+    "443": false
+  },
+  "threat_intel": {
+    "source": "abuseipdb",
+    "abuse_confidence_score": 11,
+    "total_reports": 3,
+    "num_distinct_users": 3,
+    "country_code": "US",
+    "isp": "Linode",
+    "domain": "linode.com",
+    "usage_type": "Data Center/Web Hosting/Transit",
+    "flagged": false
+  }
+}

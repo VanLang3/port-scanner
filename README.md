@@ -17,6 +17,7 @@ Most security analysts use nmap without understanding what's happening underneat
 - **Banner grabbing** — reads service responses to identify software and versions on open ports
 - **Input validation** — validates IPv4 addresses and parses flexible port expressions (`22`, `1-1024`, `22,80,443`)
 - **JSON output** — structured results file for downstream ingestion by other tools or SIEMs
+- **Threat intel lookup** — optional AbuseIPDB check before scanning (`--intel`)
 - **CLI interface** — argparse-based flags matching standard tool conventions
 
 ---
@@ -56,12 +57,19 @@ Results saved to: results/scan_scanme_nmap_org_20240615_143022.json
 
 ## Installation
 
-No external dependencies required for core scanning. Python 3.8+ only.
+Core scanning uses only the Python standard library. Threat intel lookup requires `requests`.
 
 ```bash
 git clone https://github.com/yourusername/port-scanner
 cd port-scanner
+pip install -r requirements.txt
 python scanner.py --help
+```
+
+For `--intel`, create a free API key at [abuseipdb.com](https://www.abuseipdb.com/) and export it:
+
+```bash
+export ABUSEIPDB_API_KEY="your_key_here"
 ```
 
 ---
@@ -80,6 +88,12 @@ python scanner.py 192.168.1.1 -p 1-65535 -t 200 -o
 
 # Adjust timeout (useful for slow networks)
 python scanner.py 192.168.1.1 -p 1-1024 --timeout 2.0
+
+# Check AbuseIPDB reputation before scanning
+python scanner.py 45.33.32.156 -p 22,80,443 --intel
+
+# Threat intel + save JSON (intel included in output file)
+python scanner.py 45.33.32.156 -p 22,80,443 --intel -o
 ```
 
 **Flags:**
@@ -91,6 +105,7 @@ python scanner.py 192.168.1.1 -p 1-1024 --timeout 2.0
 | `-t`, `--threads` | `100` | Max concurrent threads |
 | `--timeout` | `1.0` | Seconds to wait per port |
 | `-o`, `--output` | off | Save results to JSON file |
+| `--intel` | off | Query AbuseIPDB for IP reputation before scanning |
 
 ---
 
@@ -148,7 +163,7 @@ Understanding how this tool works helps write better detections against it. A sc
 - CVE lookup via NVD API using grabbed banner versions
 - UDP scanning mode
 - Rate limiting option to evade basic IDS thresholds
-- Integration with AbuseIPDB to flag known malicious IPs before scanning
+- VirusTotal / Shodan enrichment alongside AbuseIPDB
 
 ---
 
@@ -167,6 +182,7 @@ Unauthorized port scanning may violate the Computer Fraud and Abuse Act (CFAA) a
 - `argparse` — CLI interface
 - `json` — structured output
 - `re` — IP validation and input parsing
+- `requests` — AbuseIPDB threat intel API (optional, `--intel` only)
 
 ---
 

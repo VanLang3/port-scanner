@@ -1,11 +1,12 @@
-import argparse
-import json
-import os
-import socket
+import argparse # used for command line arguments
+import json 
+import os # used for creating files and directories
+import socket # used for network operations
 import threading # used for multitasking 
 from datetime import datetime
 
 from utils import is_valid_ip, is_private_ip, parse_port_input
+from threat_intel import check_abuseipdb, print_threat_report
 
 
 def scan_port(ip, port, timeout=1):
@@ -103,7 +104,7 @@ def scan_range_threaded(ip, ports, timeout=1, max_threads=100):
     return results
 
 
-def save_results(ip, results, output_dir="results"):
+def save_results(ip, results, output_dir="results", threat_intel=None):
     """
     Save scan results as a JSON file.
     Filename includes IP and timestamp.
@@ -124,6 +125,9 @@ def save_results(ip, results, output_dir="results"):
         "open_count": len(open_ports),
         "full_results": {str(port): is_open for port, is_open in results.items()}
     }
+
+    if threat_intel:
+        output["threat_intel"] = threat_intel
 
     # writing the dict results
     with open(filename, "w") as f:
@@ -147,12 +151,22 @@ def main():
                         help="Timeout per port in seconds (default: 1.0)")
     parser.add_argument("-o", "--output", action="store_true",
                         help="Save results to JSON file")
+    parser.add_argument("--intel", action="store_true",
+                        help="Check target IP against AbuseIPDB before scanning")
     args = parser.parse_args()
 
     # Validate input
     if not is_valid_ip(args.target):
         print(f"Error: '{args.target}' is not a valid IP address")
         return
+
+    threat_intel = None
+    if args.intel:
+        print(f"\nChecking threat intelligence for {args.target}...\n")
+        threat_intel = check_abuseipdb(args.target)
+        if threat_intel:
+            print_threat_report(threat_intel)
+        print()
 
     ports = parse_port_input(args.ports)
     print(f"\nScanning {args.target} — {len(ports)} ports\n")
@@ -163,7 +177,7 @@ def main():
     print(f"\nDone. {len(open_ports)} open port(s) found.")
 
     if args.output:
-        save_results(args.target, results)
+        save_results(args.target, results, threat_intel=threat_intel)
 
 
 if __name__ == "__main__":
