@@ -18,6 +18,7 @@ Most security analysts use nmap without understanding what's happening underneat
 - **Input validation** — validates IPv4 addresses and parses flexible port expressions (`22`, `1-1024`, `22,80,443`)
 - **JSON output** — structured results file for downstream ingestion by other tools or SIEMs
 - **Threat intel lookup** — optional AbuseIPDB check before scanning (`--intel`)
+- **Webhook alerting** — POST to Slack/Discord when high-risk ports open (`--alert`)
 - **CLI interface** — argparse-based flags matching standard tool conventions
 
 ---
@@ -72,6 +73,17 @@ For `--intel`, create a free API key at [abuseipdb.com](https://www.abuseipdb.co
 export ABUSEIPDB_API_KEY="your_key_here"
 ```
 
+**Webhook setup (`--alert`):**
+
+- **Slack:** Apps → Incoming Webhooks → Add to workspace → copy URL
+- **Discord:** Server Settings → Integrations → Webhooks → New Webhook → copy URL
+
+```bash
+export WEBHOOK_URL="https://hooks.slack.com/services/..."
+# or
+export WEBHOOK_URL="https://discord.com/api/webhooks/..."
+```
+
 ---
 
 ## Usage
@@ -94,6 +106,13 @@ python scanner.py 45.33.32.156 -p 22,80,443 --intel
 
 # Threat intel + save JSON (intel included in output file)
 python scanner.py 45.33.32.156 -p 22,80,443 --intel -o
+
+# Alert Slack/Discord if high-risk ports (22, 3389, etc.) are open
+export WEBHOOK_URL="https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+python scanner.py 192.168.1.1 -p 1-1024 --alert
+
+# Full pipeline: intel check, scan, save JSON, alert on risk
+python scanner.py 45.33.32.156 -p 1-1024 --intel -o --alert
 ```
 
 **Flags:**
@@ -106,6 +125,8 @@ python scanner.py 45.33.32.156 -p 22,80,443 --intel -o
 | `--timeout` | `1.0` | Seconds to wait per port |
 | `-o`, `--output` | off | Save results to JSON file |
 | `--intel` | off | Query AbuseIPDB for IP reputation before scanning |
+| `--alert` | off | Send Slack/Discord webhook if high-risk ports are open |
+| `--webhook` | env `WEBHOOK_URL` | Override webhook URL for `--alert` |
 
 ---
 
@@ -182,7 +203,7 @@ Unauthorized port scanning may violate the Computer Fraud and Abuse Act (CFAA) a
 - `argparse` — CLI interface
 - `json` — structured output
 - `re` — IP validation and input parsing
-- `requests` — AbuseIPDB threat intel API (optional, `--intel` only)
+- `requests` — AbuseIPDB threat intel + Slack/Discord webhooks (optional)
 
 ---
 

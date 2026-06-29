@@ -5,6 +5,7 @@ import socket # used for network operations
 import threading # used for multitasking 
 from datetime import datetime
 
+from alerts import maybe_send_alert
 from utils import is_valid_ip, is_private_ip, parse_port_input
 from threat_intel import check_abuseipdb, print_threat_report
 
@@ -42,27 +43,27 @@ def grab_banner(ip, port, timeout=2):
     except Exception:
         return None
 
-
-def scan_range(ip, ports, timeout=1):
-    """
-    Scan a list of ports on a single IP.
-    Returns a dict: { port: True/False }
-    ports: list of ints, e.g. [22, 80, 443, 8080]
-    """
-    results = {}
-    for port in ports:
-        is_open = scan_port(ip, port, timeout)
-        if is_open:
-            banner = grab_banner(ip, port)
-            if banner:
-                first_line = banner.split('\n')[0]
-                print(f"  {ip}:{port:>5}  —  OPEN  |  {first_line}")
-            else:
-                print(f"  {ip}:{port:>5}  —  OPEN")
-        else:
-            print(f"  {ip}:{port:>5}  —  closed")
-        results[port] = is_open
-    return results
+# function is not used in this program 
+# def scan_range(ip, ports, timeout=1):
+#     """
+#     Scan a list of ports on a single IP.
+#     Returns a dict: { port: True/False }
+#     ports: list of ints, e.g. [22, 80, 443, 8080]
+#     """
+#     results = {}
+#     for port in ports:
+#         is_open = scan_port(ip, port, timeout)
+#         if is_open:
+#             banner = grab_banner(ip, port)
+#             if banner:
+#                 first_line = banner.split('\n')[0]
+#                 print(f"  {ip}:{port:>5}  —  OPEN  |  {first_line}")
+#             else:
+#                 print(f"  {ip}:{port:>5}  —  OPEN")
+#         else:
+#             print(f"  {ip}:{port:>5}  —  closed")
+#         results[port] = is_open
+#     return results
 
 
 def scan_range_threaded(ip, ports, timeout=1, max_threads=100):
@@ -153,6 +154,10 @@ def main():
                         help="Save results to JSON file")
     parser.add_argument("--intel", action="store_true",
                         help="Check target IP against AbuseIPDB before scanning")
+    parser.add_argument("--alert", action="store_true",
+                        help="Send webhook alert if high-risk ports are open (Slack/Discord)")
+    parser.add_argument("--webhook", default=None,
+                        help="Webhook URL (or set WEBHOOK_URL env var)")
     args = parser.parse_args()
 
     # Validate input
@@ -178,6 +183,13 @@ def main():
 
     if args.output:
         save_results(args.target, results, threat_intel=threat_intel)
+
+    if args.alert:
+        maybe_send_alert(
+            args.target, open_ports,
+            threat_intel=threat_intel,
+            webhook_url=args.webhook,
+        )
 
 
 if __name__ == "__main__":
