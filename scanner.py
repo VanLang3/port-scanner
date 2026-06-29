@@ -143,7 +143,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Port scanner — educational security tool"
     )
-    parser.add_argument("target", help="IP address to scan")
+    parser.add_argument("target", help="IP address or domain name to scan")
     parser.add_argument("-p", "--ports", default="1-1024",
                         help="Ports to scan. Examples: 80, 22,80,443, 1-1024")
     parser.add_argument("-t", "--threads", type=int, default=100,
@@ -160,33 +160,47 @@ def main():
                         help="Webhook URL (or set WEBHOOK_URL env var)")
     args = parser.parse_args()
 
-    # Validate input
-    if not is_valid_ip(args.target):
-        print(f"Error: '{args.target}' is not a valid IP address")
+    # --- NEW: DNS RESOLUTION BLOCK ---
+    raw_input = args.target
+    try:
+        # If it's already an IP, this safely returns it unchanged.
+        # If it's a domain name (like scanme.nmap.org), it resolves it to a numeric IP.
+        target = socket.gethostbyname(raw_input)
+        if raw_input != target:
+            print(f"🌍 Resolved hostname '{raw_input}' to IP address: {target}")
+    except socket.gaierror:
+        # Catching network errors if the domain name doesn't exist or there is no internet
+        print(f"❌ Error: Could not resolve hostname '{raw_input}' to a valid IP address.")
+        return
+    # ---------------------------------
+
+    # Validate input using our resolved 'target' variable
+    if not is_valid_ip(target):
+        print(f"Error: '{target}' is not a valid IP address")
         return
 
     threat_intel = None
     if args.intel:
-        print(f"\nChecking threat intelligence for {args.target}...\n")
-        threat_intel = check_abuseipdb(args.target)
+        print(f"\nChecking threat intelligence for {target}...\n")
+        threat_intel = check_abuseipdb(target)
         if threat_intel:
             print_threat_report(threat_intel)
         print()
 
     ports = parse_port_input(args.ports)
-    print(f"\nScanning {args.target} — {len(ports)} ports\n")
+    print(f"\nScanning {target} — {len(ports)} ports\n")
 
-    results = scan_range_threaded(args.target, ports, args.timeout, args.threads)
+    results = scan_range_threaded(target, ports, args.timeout, args.threads)
 
     open_ports = [p for p, o in results.items() if o]
     print(f"\nDone. {len(open_ports)} open port(s) found.")
 
     if args.output:
-        save_results(args.target, results, threat_intel=threat_intel)
+        save_results(target, results, threat_intel=threat_intel)
 
     if args.alert:
         maybe_send_alert(
-            args.target, open_ports,
+            target, open_ports,
             threat_intel=threat_intel,
             webhook_url=args.webhook,
         )
