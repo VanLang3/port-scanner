@@ -1,6 +1,6 @@
 # Python Port Scanner
 
-A multithreaded TCP port scanner built from scratch in Python. Scans individual hosts for open ports, grabs service banners to identify running software, and outputs structured JSON results. Built as a foundational security engineering project to understand network reconnaissance at the socket level.
+A multithreaded TCP port scanner built from scratch in Python. Scans individual hosts for open ports, grabs service banners to identify running software, and outputs structured JSON results. These results then alert a discord server if any vulnerable ports are open. It is built as a foundational security engineering project to understand network reconnaissance at the socket level.
 
 ---
 
